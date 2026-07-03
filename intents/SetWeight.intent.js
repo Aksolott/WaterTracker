@@ -39,6 +39,4 @@ function SetWeight(event) {
     };
 }
 
-}
-
 module.exports = SetWeight;
