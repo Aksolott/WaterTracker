@@ -34,17 +34,10 @@ function SetWeight(event) {
     setWeight(userId, weight, norm);
 
     return {
-
-        text:
-            `✅ Вес сохранён.
-
-Вес: ${weight} кг
-
-Рекомендуемая норма воды: ${norm} мл в день 💧`,
-
-        end_session: false
-
+        text: "Ваш вес сохранён! 🎉",
+        type: "text"
     };
+}
 
 }
 

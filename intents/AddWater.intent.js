@@ -1,70 +1,47 @@
-const { parseWater } = require("../services/parser");
-const { addWater, getStats } = require("../services/storage");
+const { addWater } = require("../models/users");
+const { getStats } = require("../services/storage");
 
 function AddWater(event) {
+    const { userId, text } = event;
 
-    const userId = event.userId;
+    // Определяем объём воды
+    let amount = 0;
+    let unit = 'мл';
 
-    const text = (event.text || "").toLowerCase();
+    // Проверяем разные варианты
+    const mlMatch = text.match(/(\d+)\s*мл/);
+    const literMatch = text.match(/(\d+)\s*литр/);
+    const glassMatch = text.match(/стакан/);
 
-    const stats = getStats(userId);
-
-    if (stats.dailyNorm === 0) {
-
-        return {
-
-            text:
-                "Сначала сообщи свой вес.\n\nНапример:\n\nмой вес 70 кг",
-
-            end_session: false
-
-        };
-
+    if (mlMatch) {
+        amount = parseInt(mlMatch[1]);
+    } else if (literMatch) {
+        amount = parseInt(literMatch[1]) * 1000;
+    } else if (glassMatch) {
+        amount = 200; // стандартный стакан 200 мл
+    } else {
+        // Если не указан объём — добавляем стакан по умолчанию
+        amount = 200;
     }
 
-    const amount = parseWater(text);
-
-    if (!amount) {
-
+    if (amount <= 0 || amount > 5000) {
         return {
-
-            text:
-                "Не удалось определить количество воды.\n\nНапример:\n• добавь 250 мл\n• добавь стакан воды",
-
-            end_session: false
-
+            text: "❌ Пожалуйста, укажите корректный объём (до 5000 мл).",
+            type: "text"
         };
-
     }
 
+    // Сохраняем воду
     addWater(userId, amount);
 
-    const newStats = getStats(userId);
-
-    let answer =
-        `💧 Добавлено ${amount} мл.
-
-Сегодня выпито:
-
-${newStats.waterToday} из ${newStats.dailyNorm} мл.
-
-Осталось:
-
-${newStats.remaining} мл.`;
-
-    if (newStats.remaining === 0) {
-
-        answer += "\n\n🎉 Поздравляю! Сегодня ты выполнил дневную норму.";
-
-    }
+    // Получаем актуальную статистику
+    const stats = getStats(userId);
+    const progress = Math.round((stats.drunk / stats.dailyNorm) * 100);
 
     return {
-
-        text: answer,
-        end_session: false
-
+        text: `✅ Добавлено ${amount} мл воды!\n💧 Всего выпито: ${stats.drunk} мл из ${stats.dailyNorm} мл (${progress}%)\nОсталось: ${stats.remaining} мл`,
+        type: "text"
     };
-
 }
 
 module.exports = AddWater;

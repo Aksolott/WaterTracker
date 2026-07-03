@@ -1,43 +1,28 @@
 ﻿const { getStats } = require("../services/storage");
 
 function GetStats(event) {
+    const { userId } = event;
 
-    const stats = getStats(event.userId);
+    const stats = getStats(userId);
 
-    if (stats.dailyNorm === 0) {
-
+    if (!stats || stats.dailyNorm === 0) {
         return {
-
-            text:
-                "Я пока не знаю твой вес.\n\nСкажи:\n\nмой вес 70 кг",
-
-            end_session: false
-
+            text: "❌ Вы ещё не указали свой вес.\nПожалуйста, начните с команды: \"мой вес 70 кг\"",
+            type: "text"
         };
-
     }
 
-    const percent = Math.round(
-        (stats.waterToday / stats.dailyNorm) * 100
-    );
+    const progress = Math.round((stats.drunk / stats.dailyNorm) * 100);
+
+    const barLength = 10;
+    const filled = Math.round((progress / 100) * barLength);
+    const empty = barLength - filled;
+    const progressBar = '█'.repeat(filled) + '░'.repeat(empty);
 
     return {
-
-        text:
-            `📊 Твой прогресс
-
-💧 Выпито: ${stats.waterToday} мл
-
-🎯 Норма: ${stats.dailyNorm} мл
-
-📉 Осталось: ${stats.remaining} мл
-
-📈 Выполнено: ${percent}%`,
-
-        end_session: false
-
+        text: `📊 ВАША СТАТИСТИКА:\n\n${progressBar} ${progress}%\n\n💧 Выпито: ${stats.drunk} мл\n🎯 Норма: ${stats.dailyNorm} мл\n⏳ Осталось: ${stats.remaining} мл\n\n${stats.remaining <= 0 ? '🎉 Отлично! Норма выполнена!' : 'Продолжайте пить воду! 💪'}`,
+        type: "text"
     };
-
 }
 
 module.exports = GetStats;
